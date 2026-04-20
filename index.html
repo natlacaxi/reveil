@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RÉVEIL INTELLIGENT</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050810;
+    --surface: #0a0f1e;
+    --surface2: #0f1528;
+    --border: #1a2540;
+    --accent: #00d4ff;
+    --accent2: #7b2fff;
+    --accent3: #ff6b35;
+    --green: #00ff88;
+    --text: #c8d8f0;
+    --text-dim: #4a6080;
+    --glow: 0 0 20px rgba(0,212,255,0.4);
+    --glow2: 0 0 20px rgba(123,47,255,0.4);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Exo 2', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background: 
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0,212,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 60% at 80% 80%, rgba(123,47,255,0.05) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,212,255,0.02) 39px, rgba(0,212,255,0.02) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,212,255,0.02) 39px, rgba(0,212,255,0.02) 40px);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .container { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:20px; }
+
+  /* Header */
+  .header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 0 24px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:30px;
+  }
+  .logo {
+    font-family:'Orbitron',monospace;
+    font-size:1.2rem; font-weight:900;
+    letter-spacing:4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .status-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 10px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Main clock */
+  .clock-section {
+    display:flex; flex-direction:column; align-items:center;
+    margin-bottom:30px;
+  }
+
+  .clock-ring {
+    position:relative;
+    width:280px; height:280px;
+    margin-bottom:20px;
+  }
+  .clock-ring svg {
+    position:absolute; top:0; left:0;
+    transform:rotate(-90deg);
+  }
+  .ring-track { fill:none; stroke:var(--border); stroke-width:3; }
+  .ring-seconds { fill:none; stroke:var(--accent); stroke-width:3; stroke-linecap:round; transition:stroke-dashoffset 1s linear; }
+  .ring-minutes { fill:none; stroke:var(--accent2); stroke-width:2; stroke-linecap:round; }
+  .ring-hours { fill:none; stroke:var(--accent3); stroke-width:2; stroke-linecap:round; }
+
+  .clock-inner {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    text-align:center;
+  }
+  .time-display {
+    font-family:'Orbitron',monospace;
+    font-size:3.8rem; font-weight:700;
+    letter-spacing:2px;
+    background: linear-gradient(180deg, #fff 0%, var(--accent) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    text-shadow: none;
+    line-height:1;
+  }
+  .seconds-display {
+    font-family:'Share Tech Mono',monospace;
+    font-size:1.2rem;
+    color:var(--accent);
+    opacity:0.8;
+    margin-top:4px;
+  }
+  .date-display {
+    font-size:0.75rem; color:var(--text-dim);
+    letter-spacing:2px; text-transform:uppercase;
+    margin-top:6px;
+  }
+
+  /* Speech banner */
+  .speech-banner {
+    background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(123,47,255,0.08));
+    border:1px solid rgba(0,212,255,0.2);
+    border-radius:12px;
+    padding:12px 24px;
+    font-family:'Share Tech Mono',monospace;
+    font-size:0.9rem;
+    color:var(--accent);
+    letter-spacing:1px;
+    min-width:320px;
+    text-align:center;
+    min-height:44px;
+    display:flex; align-items:center; justify-content:center;
+    transition:all 0.3s;
+  }
+  .speech-banner.speaking {
+    border-color:var(--green);
+    color:var(--green);
+    box-shadow:0 0 20px rgba(0,255,136,0.2);
+    animation: speakPulse 0.5s ease infinite alternate;
+  }
+  @keyframes speakPulse { from{opacity:1} to{opacity:0.7} }
+
+  /* Grid layout */
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+
+  /* Cards */
+  .card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:20px;
+    position:relative;
+    overflow:hidden;
+    transition:border-color 0.3s;
+  }
+  .card::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity:0;
+    transition:opacity 0.3s;
+  }
+  .card:hover::before { opacity:1; }
+  .card:hover { border-color:rgba(0,212,255,0.3); }
+
+  .card-title {
+    font-family:'Orbitron',monospace;
+    font-size:0.65rem;
+    letter-spacing:3px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    margin-bottom:14px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card-title .dot {
+    width:5px; height:5px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 6px var(--accent);
+  }
+
+  /* Alarms list */
+  .alarms-list { display:flex; flex-direction:column; gap:10px; }
+  .alarm-item {
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--surface2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    transition:all 0.3s;
+  }
+  .alarm-item.active { border-color:rgba(0,212,255,0.4); }
+  .alarm-item.ringing {
+    border-color:var(--accent3);
+    box-shadow:0 0 20px rgba(255,107,53,0.3);
+    animation:ringAnim 0.3s ease infinite alternate;
+  }
+  @keyframes ringAnim { from{transform:translateX(-2px)} to{transform:translateX(2px)} }
+
+  .alarm-time {
+    font-family:'Orbitron',monospace;
+    font-size:1.4rem; font-weight:700;
+    color:#fff;
+  }
+  .alarm-meta { font-size:0.72rem; color:var(--text-dim); margin-top:2px; }
+  .alarm-days { display:flex; gap:4px; margin-top:6px; }
+  .day-badge {
+    font-size:0.6rem; padding:2px 5px; border-radius:4px;
+    background:var(--border); color:var(--text-dim);
+    font-family:'Share Tech Mono',monospace;
+  }
+  .day-badge.on { background:rgba(0,212,255,0.15); color:var(--accent); border:1px solid rgba(0,212,255,0.3); }
+
+  /* Toggle */
+  .toggle {
+    position:relative; width:44px; height:24px; cursor:pointer;
+  }
+  .toggle input { display:none; }
+  .toggle-track {
+    position:absolute; inset:0; border-radius:12px;
+    background:var(--border); transition:background 0.3s;
+  }
+  .toggle input:checked ~ .toggle-track { background:var(--accent2); }
+  .toggle-thumb {
+    position:absolute; top:3px; left:3px;
+    width:18px; height:18px; border-radius:50%;
+    background:#fff; transition:left 0.3s;
+    box-shadow:0 2px 6px rgba(0,0,0,0.5);
+  }
+  .toggle input:checked ~ .toggle-thumb { left:23px; }
+
+  /* Buttons */
+  .btn {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 18px; border-radius:10px; border:none; cursor:pointer;
+    font-family:'Exo 2',sans-serif; font-size:0.85rem; font-weight:600;
+    transition:all 0.2s; letter-spacing:0.5px;
+  }
+  .btn-primary {
+    background:linear-gradient(135deg, var(--accent2), var(--accent));
+    color:#fff;
+    box-shadow:0 4px 16px rgba(0,212,255,0.2);
+  }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,212,255,0.35); }
+  .btn-danger { background:rgba(255,60,80,0.15); color:#ff3c50; border:1px solid rgba(255,60,80,0.3); }
+  .btn-danger:hover { background:rgba(255,60,80,0.25); }
+  .btn-ghost { background:rgba(255,255,255,0.05); color:var(--text); border:1px solid var(--border); }
+  .btn-ghost:hover { background:rgba(255,255,255,0.08); }
+  .btn-accent { background:rgba(0,212,255,0.1); color:var(--accent); border:1px solid rgba(0,212,255,0.3); }
+  .btn-accent:hover { background:rgba(0,212,255,0.2); }
+  .btn-sm { padding:6px 12px; font-size:0.78rem; }
+  .btn-full { width:100%; justify-content:center; }
+
+  /* Inputs */
+  input[type="time"], input[type="text"], select {
+    background:var(--surface2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    font-family:'Share Tech Mono',monospace;
+    font-size:0.9rem;
+    padding:9px 12px;
+    outline:none;
+    transition:border-color 0.2s;
+    width:100%;
+  }
+  input[type="time"]:focus, input[type="text"]:focus, select:focus {
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(0,212,255,0.1);
+  }
+  input[type="time"] { font-size:1.4rem; font-weight:700; text-align:center; }
+  select option { background:#0a0f1e; }
+
+  /* Range slider */
+  input[type="range"] {
+    -webkit-appearance:none; width:100%; height:4px;
+    background:var(--border); border-radius:2px; outline:none; border:none; padding:0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    background:var(--accent); cursor:pointer;
+    box-shadow:0 0 10px rgba(0,212,255,0.5);
+  }
+
+  /* Day selector */
+  .day-selector { display:flex; gap:6px; flex-wrap:wrap; }
+  .day-btn {
+    width:36px; height:36px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface2); color:var(--text-dim); cursor:pointer;
+    font-size:0.7rem; font-family:'Orbitron',monospace;
+    display:flex; align-items:center; justify-content:center;
+    transition:all 0.2s;
+  }
+  .day-btn.selected {
+    background:rgba(0,212,255,0.15); color:var(--accent);
+    border-color:rgba(0,212,255,0.4);
+    box-shadow:0 0 10px rgba(0,212,255,0.15);
+  }
+
+  /* Label */
+  .label { font-size:0.75rem; color:var(--text-dim); margin-bottom:6px; letter-spacing:1px; text-transform:uppercase; }
+
+  /* Music selector */
+  .music-options { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .music-option {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:10px 12px; cursor:pointer;
+    transition:all 0.2s; display:flex; align-items:center; gap:10px;
+  }
+  .music-option:hover { border-color:rgba(0,212,255,0.3); }
+  .music-option.selected { border-color:var(--accent); background:rgba(0,212,255,0.08); }
+  .music-icon { font-size:1.3rem; }
+  .music-name { font-size:0.8rem; color:var(--text); }
+  .music-sub { font-size:0.65rem; color:var(--text-dim); }
+
+  /* Voice settings */
+  .voice-indicator {
+    display:flex; align-items:center; gap:8px;
+    padding:10px 14px; background:var(--surface2);
+    border:1px solid var(--border); border-radius:10px;
+    margin-bottom:12px;
+  }
+  .voice-bars { display:flex; gap:3px; align-items:center; height:20px; }
+  .voice-bar {
+    width:3px; background:var(--accent); border-radius:2px;
+    animation: voiceAnim 1s ease infinite;
+  }
+  .voice-bar:nth-child(1) { height:6px; animation-delay:0s; }
+  .voice-bar:nth-child(2) { height:14px; animation-delay:0.1s; }
+  .voice-bar:nth-child(3) { height:20px; animation-delay:0.2s; }
+  .voice-bar:nth-child(4) { height:12px; animation-delay:0.3s; }
+  .voice-bar:nth-child(5) { height:8px; animation-delay:0.4s; }
+  @keyframes voiceAnim {
+    0%,100%{transform:scaleY(0.5); opacity:0.4}
+    50%{transform:scaleY(1); opacity:1}
+  }
+  .voice-bars.idle .voice-bar { animation:none; transform:scaleY(0.3); opacity:0.2; }
+
+  /* Ringing overlay */
+  .ringing-overlay {
+    position:fixed; inset:0; z-index:1000;
+    background:rgba(5,8,16,0.95);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    display:none;
+    animation:fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .ringing-overlay.show { display:flex; }
+  .ringing-circle {
+    width:200px; height:200px; border-radius:50%;
+    border:3px solid var(--accent3);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:30px;
+    animation:ringCircle 1s ease infinite;
+    position:relative;
+  }
+  @keyframes ringCircle {
+    0%{box-shadow:0 0 0 0 rgba(255,107,53,0.4)}
+    70%{box-shadow:0 0 0 40px rgba(255,107,53,0)}
+    100%{box-shadow:0 0 0 0 rgba(255,107,53,0)}
+  }
+  .ringing-time {
+    font-family:'Orbitron',monospace; font-size:3.5rem; font-weight:900; color:#fff;
+  }
+  .ringing-label {
+    font-size:0.9rem; color:var(--accent3); letter-spacing:3px; text-transform:uppercase;
+    margin-bottom:8px; font-family:'Orbitron',monospace;
+  }
+  .ringing-name { font-size:1.2rem; color:var(--text); margin-bottom:30px; }
+  .ringing-btns { display:flex; gap:16px; }
+
+  /* Snooze badge */
+  .snooze-count {
+    display:inline-block; background:rgba(255,107,53,0.2);
+    border:1px solid rgba(255,107,53,0.4); border-radius:6px;
+    padding:2px 8px; font-size:0.7rem; color:var(--accent3);
+    font-family:'Share Tech Mono',monospace;
+    margin-left:8px;
+  }
+
+  /* Tabs */
+  .tabs { display:flex; gap:4px; margin-bottom:16px; }
+  .tab {
+    padding:8px 14px; border-radius:8px; cursor:pointer;
+    font-size:0.78rem; font-family:'Orbitron',monospace; letter-spacing:1px;
+    transition:all 0.2s; border:1px solid transparent; color:var(--text-dim);
+  }
+  .tab.active { background:rgba(0,212,255,0.1); color:var(--accent); border-color:rgba(0,212,255,0.3); }
+  .tab:hover:not(.active) { background:rgba(255,255,255,0.04); }
+
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+
+  /* Row helpers */
+  .row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .row:last-child { margin-bottom:0; }
+  .flex-1 { flex:1; }
+
+  /* Notification toast */
+  .toast {
+    position:fixed; bottom:24px; right:24px; z-index:500;
+    background:var(--surface);
+    border:1px solid var(--accent);
+    border-radius:12px; padding:12px 20px;
+    font-size:0.85rem; color:var(--text);
+    box-shadow:var(--glow);
+    animation:slideIn 0.3s, fadeOut 0.3s 2.7s forwards;
+    max-width:320px;
+  }
+  @keyframes slideIn { from{transform:translateX(100%); opacity:0} to{transform:translateX(0); opacity:1} }
+  @keyframes fadeOut { to{opacity:0; transform:translateX(10px)} }
+
+  /* EQ viz */
+  .eq-bars { display:flex; gap:2px; align-items:flex-end; height:40px; }
+  .eq-bar {
+    width:8px; background:linear-gradient(to top, var(--accent2), var(--accent));
+    border-radius:2px 2px 0 0;
+    transition:height 0.15s;
+  }
+
+  /* File upload zone */
+  .upload-zone {
+    border:2px dashed var(--border); border-radius:12px;
+    padding:20px; text-align:center; cursor:pointer;
+    transition:all 0.2s; color:var(--text-dim);
+    font-size:0.85rem;
+  }
+  .upload-zone:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,0.03); }
+  .upload-zone input { display:none; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* Responsive */
+  @media(max-width:700px) {
+    .grid, .grid-3 { grid-template-columns:1fr; }
+    .time-display { font-size:2.8rem; }
+    .clock-ring { width:220px; height:220px; }
+  }
+
+  .form-group { margin-bottom:14px; }
+  .form-group:last-child { margin-bottom:0; }
+
+  .badge { 
+    display:inline-block; padding:2px 8px; border-radius:20px;
+    font-size:0.65rem; font-family:'Orbitron',monospace; letter-spacing:1px;
+  }
+  .badge-accent { background:rgba(0,212,255,0.12); color:var(--accent); border:1px solid rgba(0,212,255,0.3); }
+  .badge-purple { background:rgba(123,47,255,0.12); color:var(--accent2); border:1px solid rgba(123,47,255,0.3); }
+  .badge-orange { background:rgba(255,107,53,0.12); color:var(--accent3); border:1px solid rgba(255,107,53,0.3); }
+
+  hr { border:none; border-top:1px solid var(--border); margin:16px 0; }
+
+  .icon { font-size:1rem; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">⏰ SMART ALARM</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="weatherBadge" class="badge badge-accent">🌤 21°C</span>
+      <div class="status-dot"></div>
+    </div>
+  </div>
+
+  <!-- Clock Section -->
+  <div class="clock-section">
+    <div class="clock-ring">
+      <svg width="280" height="280" viewBox="0 0 280 280">
+        <!-- Hours ring -->
+        <circle class="ring-track" cx="140" cy="140" r="130"/>
+        <circle class="ring-hours" id="ringH" cx="140" cy="140" r="130" stroke-dasharray="816.8" stroke-dashoffset="816.8"/>
+        <!-- Minutes ring -->
+        <circle class="ring-track" cx="140" cy="140" r="118"/>
+        <circle class="ring-minutes" id="ringM" cx="140" cy="140" r="118" stroke-dasharray="741.1" stroke-dashoffset="741.1"/>
+        <!-- Seconds ring -->
+        <circle class="ring-track" cx="140" cy="140" r="106"/>
+        <circle class="ring-seconds" id="ringS" cx="140" cy="140" r="106" stroke-dasharray="665.8" stroke-dashoffset="665.8"/>
+      </svg>
+      <div class="clock-inner">
+        <div class="time-display" id="timeDisplay">00:00</div>
+        <div class="seconds-display" id="secsDisplay">00</div>
+        <div class="date-display" id="dateDisplay">—</div>
+      </div>
+    </div>
+    <div class="speech-banner" id="speechBanner">🤖 Réveil intelligent prêt</div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('alarms')">⏰ Alarmes</div>
+    <div class="tab" onclick="switchTab('add')">＋ Créer</div>
+    <div class="tab" onclick="switchTab('sound')">🎵 Son</div>
+    <div class="tab" onclick="switchTab('settings')">⚙ Réglages</div>
+  </div>
+
+  <!-- TAB: Alarms list -->
+  <div id="tab-alarms" class="tab-content active">
+    <div class="grid">
+      <div class="card" style="grid-column:span 2">
+        <div class="card-title"><span class="dot"></span>MES ALARMES</div>
+        <div class="alarms-list" id="alarmsList">
+          <!-- populated by JS -->
+        </div>
+        <div style="margin-top:14px;text-align:center">
+          <button class="btn btn-accent btn-sm" onclick="switchTab('add')">＋ Nouvelle alarme</button>
+        </div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--accent2);box-shadow:0 0 6px var(--accent2)"></span>PROCHAIN</div>
+        <div id="nextAlarm" style="font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:700;color:#fff">--:--</div>
+        <div id="nextAlarmIn" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px">—</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></span>ACTIVES</div>
+        <div id="activeCount" style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:var(--green)">0</div>
+        <div style="font-size:0.75rem;color:var(--text-dim)">alarmes actives</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--accent3);box-shadow:0 0 6px var(--accent3)"></span>SNOOZE</div>
+        <div id="snoozeCount" style="font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:var(--accent3)">0</div>
+        <div style="font-size:0.75rem;color:var(--text-dim)">fois répété</div>
+      </div>
+    </div>
+    <!-- Quick speak button -->
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>ANNONCE VOCALE</div>
+      <div class="row">
+        <button class="btn btn-accent flex-1" onclick="speakTime(true)">🔊 Annoncer l'heure maintenant</button>
+        <button class="btn btn-ghost" onclick="testAlarmSound()">🔔 Test son</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Add Alarm -->
+  <div id="tab-add" class="tab-content">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>HEURE DE L'ALARME</div>
+        <div class="form-group">
+          <input type="time" id="newAlarmTime" value="07:00">
+        </div>
+        <div class="form-group">
+          <div class="label">Libellé</div>
+          <input type="text" id="newAlarmLabel" placeholder="Ex: Réveil matin, Travail...">
+        </div>
+        <div class="form-group">
+          <div class="label">Jours de répétition</div>
+          <div class="day-selector" id="daySelector">
+            <div class="day-btn" data-d="L" onclick="toggleDay(this)">L</div>
+            <div class="day-btn" data-d="M" onclick="toggleDay(this)">M</div>
+            <div class="day-btn" data-d="Me" onclick="toggleDay(this)">Me</div>
+            <div class="day-btn" data-d="J" onclick="toggleDay(this)">J</div>
+            <div class="day-btn" data-d="V" onclick="toggleDay(this)">V</div>
+            <div class="day-btn" data-d="S" onclick="toggleDay(this)">S</div>
+            <div class="day-btn" data-d="D" onclick="toggleDay(this)">D</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-ghost btn-sm" onclick="selectDays(['L','M','Me','J','V'])">Sem.</button>
+            <button class="btn btn-ghost btn-sm" onclick="selectDays(['S','D'])">W-E</button>
+            <button class="btn btn-ghost btn-sm" onclick="selectDays(['L','M','Me','J','V','S','D'])">Tous</button>
+            <button class="btn btn-ghost btn-sm" onclick="selectDays([])">Aucun</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>OPTIONS ALARME</div>
+        <div class="form-group">
+          <div class="label">Son de réveil</div>
+          <select id="newAlarmSound">
+            <option value="beep">🔔 Bip classique</option>
+            <option value="digital">💻 Digital</option>
+            <option value="gentle">🌊 Doux progressif</option>
+            <option value="nature">🌿 Nature</option>
+            <option value="music">🎵 Musique importée</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="label">Volume <span id="volLabel">80%</span></div>
+          <input type="range" id="newAlarmVol" min="0" max="100" value="80" oninput="document.getElementById('volLabel').textContent=this.value+'%'">
+        </div>
+        <div class="form-group">
+          <div class="label">Snooze</div>
+          <select id="newAlarmSnooze">
+            <option value="0">Désactivé</option>
+            <option value="5" selected>5 minutes</option>
+            <option value="10">10 minutes</option>
+            <option value="15">15 minutes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="row">
+            <div class="flex-1">
+              <div style="font-size:0.85rem;margin-bottom:2px">Annonce vocale</div>
+              <div style="font-size:0.72rem;color:var(--text-dim)">Énoncer l'heure à la voix</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="newAlarmVoice" checked>
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="row">
+            <div class="flex-1">
+              <div style="font-size:0.85rem;margin-bottom:2px">Vibration</div>
+              <div style="font-size:0.72rem;color:var(--text-dim)">Si supporté par l'appareil</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="newAlarmVibrate" checked>
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addAlarm()" style="margin-top:8px">＋ Enregistrer l'alarme</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Sound & Music -->
+  <div id="tab-sound" class="tab-content">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>THÈME MUSICAL</div>
+        <div class="music-options" id="musicOptions">
+          <div class="music-option selected" data-s="beep" onclick="selectMusic(this)">
+            <span class="music-icon">🔔</span>
+            <div><div class="music-name">Bip classique</div><div class="music-sub">Simple & efficace</div></div>
+          </div>
+          <div class="music-option" data-s="digital" onclick="selectMusic(this)">
+            <span class="music-icon">💻</span>
+            <div><div class="music-name">Digital</div><div class="music-sub">Tonalité futuriste</div></div>
+          </div>
+          <div class="music-option" data-s="gentle" onclick="selectMusic(this)">
+            <span class="music-icon">🌊</span>
+            <div><div class="music-name">Doux</div><div class="music-sub">Réveil progressif</div></div>
+          </div>
+          <div class="music-option" data-s="nature" onclick="selectMusic(this)">
+            <span class="music-icon">🌿</span>
+            <div><div class="music-name">Nature</div><div class="music-sub">Sons naturels</div></div>
+          </div>
+        </div>
+        <hr>
+        <div class="card-title" style="margin-top:0"><span class="dot" style="background:var(--accent2);box-shadow:0 0 6px var(--accent2)"></span>IMPORTER MA MUSIQUE</div>
+        <label class="upload-zone">
+          <input type="file" id="musicFile" accept="audio/*" onchange="handleMusicUpload(this)">
+          <div style="font-size:1.5rem;margin-bottom:6px">🎵</div>
+          <div>Cliquez ou glissez un fichier audio</div>
+          <div style="font-size:0.72rem;margin-top:4px">MP3, WAV, OGG, M4A</div>
+        </label>
+        <div id="uploadedMusic" style="display:none;margin-top:10px" class="alarm-item">
+          <div>
+            <div class="alarm-time" id="uploadedMusicName" style="font-size:0.9rem">—</div>
+            <div class="alarm-meta">Musique importée</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-accent btn-sm" onclick="testUploadedMusic()">▶ Test</button>
+            <button class="btn btn-danger btn-sm" onclick="removeMusic()">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>VOIX & ANNONCE</div>
+        <div class="voice-indicator">
+          <div class="voice-bars idle" id="voiceBars">
+            <div class="voice-bar"></div><div class="voice-bar"></div>
+            <div class="voice-bar"></div><div class="voice-bar"></div>
+            <div class="voice-bar"></div>
+          </div>
+          <span id="voiceStatus" style="font-size:0.8rem;color:var(--text-dim)">Synthèse vocale prête</span>
+        </div>
+        <div class="form-group">
+          <div class="label">Sélection de voix</div>
+          <select id="voiceSelect">
+            <option value="">Par défaut</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="label">Vitesse <span id="rateLabel">1.0x</span></div>
+          <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1"
+            oninput="document.getElementById('rateLabel').textContent=parseFloat(this.value).toFixed(1)+'x'">
+        </div>
+        <div class="form-group">
+          <div class="label">Tonalité <span id="pitchLabel">1.0</span></div>
+          <input type="range" id="voicePitch" min="0.5" max="2" step="0.1" value="1"
+            oninput="document.getElementById('pitchLabel').textContent=parseFloat(this.value).toFixed(1)">
+        </div>
+        <div class="form-group">
+          <div class="label">Volume voix <span id="voiceVolLabel">100%</span></div>
+          <input type="range" id="voiceVol" min="0" max="100" value="100"
+            oninput="document.getElementById('voiceVolLabel').textContent=this.value+'%'">
+        </div>
+        <button class="btn btn-accent btn-full" onclick="speakTime(true)">🔊 Tester l'annonce vocale</button>
+        <hr>
+        <div class="card-title" style="margin-top:0"><span class="dot"></span>VISUALISEUR</div>
+        <div class="eq-bars" id="eqBars">
+          <!-- generated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Settings -->
+  <div id="tab-settings" class="tab-content">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>PARAMÈTRES GÉNÉRAUX</div>
+
+        <div class="form-group row">
+          <div class="flex-1">
+            <div style="font-size:0.85rem">Format 24h</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Affichage 24h / 12h (AM/PM)</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="format24" checked onchange="updateClock()">
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="form-group row">
+          <div class="flex-1">
+            <div style="font-size:0.85rem">Annonce heure auto</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Énoncer l'heure chaque heure</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="autoSpeak" checked>
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="form-group row">
+          <div class="flex-1">
+            <div style="font-size:0.85rem">Son d'interface</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Bips de confirmation</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="uiSounds" checked>
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="form-group row">
+          <div class="flex-1">
+            <div style="font-size:0.85rem">Vibration</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)">Vibrer si supporté</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="vibration" checked>
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <hr>
+
+        <div class="form-group">
+          <div class="label">Durée sonnerie max</div>
+          <select id="maxRing">
+            <option value="60">1 minute</option>
+            <option value="120" selected>2 minutes</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div class="label">Snooze par défaut</div>
+          <select id="defaultSnooze">
+            <option value="5" selected>5 min</option>
+            <option value="10">10 min</option>
+            <option value="15">15 min</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--accent3);box-shadow:0 0 6px var(--accent3)"></span>AFFICHAGE</div>
+
+        <div class="form-group">
+          <div class="label">Thème couleur</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div class="day-btn selected" onclick="setTheme(this,'#00d4ff','#7b2fff','#ff6b35')" style="background:rgba(0,212,255,0.15);border-color:rgba(0,212,255,0.4);color:var(--accent)">🔵</div>
+            <div class="day-btn" onclick="setTheme(this,'#00ff88','#00d4ff','#ffcc00')">🟢</div>
+            <div class="day-btn" onclick="setTheme(this,'#ff6b9d','#c44dff','#ffd700')">🌸</div>
+            <div class="day-btn" onclick="setTheme(this,'#ff9500','#ff6b35','#ffd700')">🔶</div>
+            <div class="day-btn" onclick="setTheme(this,'#ff3c50','#ff6b35','#ffd700')">🔴</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="label">Message de bienvenue</div>
+          <input type="text" id="welcomeMsg" value="Réveil intelligent prêt" placeholder="Message affiché...">
+        </div>
+
+        <div class="form-group row">
+          <div class="flex-1">
+            <div style="font-size:0.85rem">Afficher la météo</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="showWeather" checked>
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="form-group row">
+          <div class="flex-1">
+            <div style="font-size:0.85rem">Animations d'anneau</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="showRings" checked onchange="toggleRings(this.checked)">
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <hr>
+        <div class="card-title" style="margin-top:0"><span class="dot"></span>DONNÉES</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="exportAlarms()">📤 Exporter</button>
+          <button class="btn btn-ghost btn-sm" onclick="importAlarms()">📥 Importer</button>
+          <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑 Tout effacer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Ringing Overlay -->
+<div class="ringing-overlay" id="ringingOverlay">
+  <div id="ringEmoji" style="font-size:3rem;margin-bottom:16px;animation:bounce 0.5s infinite alternate">⏰</div>
+  <div class="ringing-circle">
+    <div>
+      <div class="ringing-label">RÉVEIL !</div>
+      <div class="ringing-time" id="ringingTime">--:--</div>
+    </div>
+  </div>
+  <div class="ringing-name" id="ringingName">Alarme</div>
+  <div class="ringing-btns">
+    <button class="btn btn-ghost" onclick="snoozeAlarm()" style="font-size:1rem;padding:14px 24px">
+      💤 Snooze <span id="snoozeMins">5</span> min
+    </button>
+    <button class="btn btn-danger" onclick="stopAlarm()" style="font-size:1rem;padding:14px 24px">
+      ✕ Arrêter
+    </button>
+  </div>
+</div>
+
+<style>
+@keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-10px)} }
+</style>
+
+<script>
+// ======= STATE =======
+let alarms = JSON.parse(localStorage.getItem('smartAlarms') || '[]');
+let currentRingingAlarm = null;
+let alarmTimeout = null;
+let audioCtx = null;
+let alarmOscillators = [];
+let uploadedAudioBuffer = null;
+let uploadedAudioSource = null;
+let uploadedFileName = '';
+let totalSnoozes = 0;
+let eqInterval = null;
+let lastSpokenHour = -1;
+let ringsEnabled = true;
+
+const DAYS = ['L','M','Me','J','V','S','D'];
+const DAY_NAMES = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+const MONTHS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
+// ======= AUDIO =======
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playBeep(freq=880, dur=0.15, type='square', vol=0.3, delay=0) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+    gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.01);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + delay + dur);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + dur + 0.05);
+    return osc;
+  } catch(e) {}
+}
+
+function playAlarmSound(type, loop=false) {
+  stopAlarmSound();
+  const ctx = getAudioCtx();
+  
+  const patterns = {
+    beep: () => {
+      let t = 0;
+      for(let i=0;i<3;i++) { playBeep(880,0.1,'square',0.3,t); playBeep(1100,0.1,'square',0.3,t+0.15); t+=0.5; }
+    },
+    digital: () => {
+      [440,660,880,1100,880,660].forEach((f,i) => playBeep(f,0.08,'sawtooth',0.2,i*0.1));
+    },
+    gentle: () => {
+      [220,330,440,550].forEach((f,i) => playBeep(f,0.3,'sine',0.15,i*0.4));
+    },
+    nature: () => {
+      for(let i=0;i<8;i++) {
+        const f = 400 + Math.random()*600;
+        playBeep(f,0.05,'sine',0.1,i*0.15);
+      }
+    }
+  };
+  
+  if (type === 'music' && uploadedAudioBuffer) {
+    const src = ctx.createBufferSource();
+    src.buffer = uploadedAudioBuffer;
+    src.loop = loop;
+    src.connect(ctx.destination);
+    src.start();
+    uploadedAudioSource = src;
+  } else if (patterns[type]) {
+    patterns[type]();
+    if (loop) {
+      alarmOscillators.loopTimer = setInterval(() => {
+        if(patterns[type]) patterns[type]();
+      }, 2000);
+    }
+  }
+}
+
+function stopAlarmSound() {
+  if (alarmOscillators.loopTimer) { clearInterval(alarmOscillators.loopTimer); alarmOscillators.loopTimer = null; }
+  if (uploadedAudioSource) { try { uploadedAudioSource.stop(); } catch(e) {} uploadedAudioSource = null; }
+}
+
+function testAlarmSound() {
+  const sel = document.getElementById('newAlarmSound')?.value || 'beep';
+  playAlarmSound(sel);
+}
+
+// ======= SPEECH =======
+function getVoiceSettings() {
+  return {
+    rate: parseFloat(document.getElementById('voiceRate')?.value || 1),
+    pitch: parseFloat(document.getElementById('voicePitch')?.value || 1),
+    volume: parseFloat(document.getElementById('voiceVol')?.value || 100) / 100,
+    voiceIndex: document.getElementById('voiceSelect')?.value || ''
+  };
+}
+
+function speak(text, onEnd) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'fr-FR';
+  const s = getVoiceSettings();
+  utter.rate = s.rate;
+  utter.pitch = s.pitch;
+  utter.volume = s.volume;
+  
+  const voices = window.speechSynthesis.getVoices();
+  if (s.voiceIndex && voices[s.voiceIndex]) utter.voice = voices[s.voiceIndex];
+  else {
+    const frVoice = voices.find(v => v.lang.startsWith('fr'));
+    if (frVoice) utter.voice = frVoice;
+  }
+  
+  const banner = document.getElementById('speechBanner');
+  const bars = document.getElementById('voiceBars');
+  
+  utter.onstart = () => {
+    if(banner) { banner.textContent = '🎙 ' + text; banner.classList.add('speaking'); }
+    if(bars) bars.classList.remove('idle');
+    const status = document.getElementById('voiceStatus');
+    if(status) status.textContent = 'Synthèse vocale active...';
+  };
+  utter.onend = () => {
+    if(banner) { banner.textContent = document.getElementById('welcomeMsg')?.value || 'Réveil intelligent prêt'; banner.classList.remove('speaking'); }
+    if(bars) bars.classList.add('idle');
+    const status = document.getElementById('voiceStatus');
+    if(status) status.textContent = 'Synthèse vocale prête';
+    if(onEnd) onEnd();
+  };
+  
+  window.speechSynthesis.speak(utter);
+}
+
+function speakTime(force=false) {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const fmt24 = document.getElementById('format24')?.checked ?? true;
+  
+  let hStr, period = '';
+  if (fmt24) {
+    hStr = h + ' heure' + (m===0 ? '' : ' ' + m);
+  } else {
+    const h12 = h % 12 || 12;
+    period = h < 12 ? 'du matin' : 'de l\'après-midi';
+    hStr = h12 + ' heure' + (m===0 ? '' : ' ' + m) + ' ' + period;
+  }
+  
+  const text = 'Il est ' + hStr;
+  // Say it twice with 2 second pause
+  speak(text, () => {
+    setTimeout(() => speak(text), 2000);
+  });
+}
+
+// ======= CLOCK =======
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  const fmt24 = document.getElementById('format24')?.checked ?? true;
+  
+  let displayH = fmt24 ? String(h).padStart(2,'0') : String(h%12||12).padStart(2,'0');
+  let ampm = fmt24 ? '' : (h < 12 ? ' AM' : ' PM');
+  
+  document.getElementById('timeDisplay').textContent = displayH + ':' + String(m).padStart(2,'0') + ampm;
+  document.getElementById('secsDisplay').textContent = String(s).padStart(2,'0') + 's';
+  
+  const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  document.getElementById('dateDisplay').textContent = 
+    days[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS[now.getMonth()] + ' ' + now.getFullYear();
+  
+  if (ringsEnabled) {
+    // Update rings
+    const circumS = 665.8, circumM = 741.1, circumH = 816.8;
+    const pctS = s / 60, pctM = (m + s/60) / 60, pctH = (h % 12 + m/60) / 12;
+    document.getElementById('ringS').style.strokeDashoffset = circumS * (1 - pctS);
+    document.getElementById('ringM').style.strokeDashoffset = circumM * (1 - pctM);
+    document.getElementById('ringH').style.strokeDashoffset = circumH * (1 - pctH);
+  }
+  
+  // Auto announce hourly
+  if (m === 0 && s === 0 && h !== lastSpokenHour) {
+    lastSpokenHour = h;
+    if (document.getElementById('autoSpeak')?.checked) speakTime();
+  }
+  
+  // Check alarms
+  checkAlarms(h, m, s);
+  
+  // Update next alarm display
+  updateNextAlarm();
+}
+
+// ======= ALARMS =======
+function addAlarm() {
+  const t = document.getElementById('newAlarmTime').value;
+  if (!t) { showToast('⚠ Veuillez choisir une heure'); return; }
+  
+  const selectedDays = [...document.querySelectorAll('.day-btn.selected')].map(b => b.dataset.d);
+  
+  const alarm = {
+    id: Date.now(),
+    time: t,
+    label: document.getElementById('newAlarmLabel').value || 'Alarme',
+    days: selectedDays,
+    sound: document.getElementById('newAlarmSound').value,
+    volume: parseInt(document.getElementById('newAlarmVol').value),
+    snooze: parseInt(document.getElementById('newAlarmSnooze').value),
+    voice: document.getElementById('newAlarmVoice').checked,
+    vibrate: document.getElementById('newAlarmVibrate').checked,
+    active: true,
+    snoozedUntil: null
+  };
+  
+  alarms.push(alarm);
+  saveAlarms();
+  renderAlarms();
+  switchTab('alarms');
+  showToast('✅ Alarme ' + t + ' enregistrée !');
+  
+  // Reset form
+  document.getElementById('newAlarmLabel').value = '';
+  selectDays([]);
+}
+
+function deleteAlarm(id) {
+  alarms = alarms.filter(a => a.id !== id);
+  saveAlarms();
+  renderAlarms();
+  showToast('🗑 Alarme supprimée');
+}
+
+function toggleAlarm(id) {
+  const alarm = alarms.find(a => a.id === id);
+  if (alarm) { alarm.active = !alarm.active; saveAlarms(); renderAlarms(); }
+}
+
+function checkAlarms(h, m, s) {
+  if (currentRingingAlarm) return;
+  const now = new Date();
+  const dayIdx = (now.getDay() + 6) % 7; // Mon=0
+  const today = DAYS[dayIdx];
+  
+  for (const alarm of alarms) {
+    if (!alarm.active) continue;
+    const [ah, am] = alarm.time.split(':').map(Number);
+    if (ah !== h || am !== m) continue;
+    if (s > 5) continue; // Only trigger in first 5s
+    
+    // Check day
+    if (alarm.days.length > 0 && !alarm.days.includes(today)) continue;
+    
+    // Check snooze
+    if (alarm.snoozedUntil && new Date() < new Date(alarm.snoozedUntil)) continue;
+    
+    triggerAlarm(alarm);
+    return;
+  }
+}
+
+function triggerAlarm(alarm) {
+  currentRingingAlarm = alarm;
+  
+  const overlay = document.getElementById('ringingOverlay');
+  document.getElementById('ringingTime').textContent = alarm.time;
+  document.getElementById('ringingName').textContent = alarm.label;
+  document.getElementById('snoozeMins').textContent = alarm.snooze || 5;
+  overlay.classList.add('show');
+  
+  // Play sound
+  playAlarmSound(alarm.sound, true);
+  
+  // Vibrate
+  if (alarm.vibrate && navigator.vibrate) navigator.vibrate([500,200,500,200,500]);
+  
+  // Voice
+  if (alarm.voice) {
+    setTimeout(() => {
+      const [ah, am] = alarm.time.split(':').map(Number);
+      const fmt24 = document.getElementById('format24')?.checked ?? true;
+      let hStr = fmt24 ? ah + ' heure' + (am===0 ? '' : ' ' + am) : (ah%12||12) + ' heure' + (am===0 ? '' : ' ' + am);
+      const text = alarm.label + '. Il est ' + hStr;
+      speak(text, () => setTimeout(() => speak(text), 2000));
+    }, 500);
+  }
+  
+  // Auto stop after max time
+  const maxSec = parseInt(document.getElementById('maxRing')?.value || 120);
+  alarmTimeout = setTimeout(stopAlarm, maxSec * 1000);
+}
+
+function stopAlarm() {
+  if (alarmTimeout) { clearTimeout(alarmTimeout); alarmTimeout = null; }
+  stopAlarmSound();
+  window.speechSynthesis?.cancel();
+  document.getElementById('ringingOverlay').classList.remove('show');
+  currentRingingAlarm = null;
+  renderAlarms();
+}
+
+function snoozeAlarm() {
+  if (!currentRingingAlarm) return;
+  const mins = currentRingingAlarm.snooze || parseInt(document.getElementById('defaultSnooze')?.value || 5);
+  const until = new Date(Date.now() + mins * 60000);
+  currentRingingAlarm.snoozedUntil = until.toISOString();
+  totalSnoozes++;
+  document.getElementById('snoozeCount').textContent = totalSnoozes;
+  saveAlarms();
+  stopAlarm();
+  showToast('💤 Snooze ' + mins + ' minutes');
+}
+
+function renderAlarms() {
+  const list = document.getElementById('alarmsList');
+  if (!list) return;
+  
+  if (alarms.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:0.85rem">Aucune alarme configurée</div>';
+    document.getElementById('activeCount').textContent = '0';
+    return;
+  }
+  
+  const sorted = [...alarms].sort((a,b) => a.time.localeCompare(b.time));
+  list.innerHTML = sorted.map(alarm => `
+    <div class="alarm-item ${alarm.active ? 'active' : ''}" id="alarm-${alarm.id}">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="alarm-time">${alarm.time}</span>
+          ${alarm.voice ? '<span style="font-size:0.8rem">🔊</span>' : ''}
+          ${alarm.snoozedUntil && new Date() < new Date(alarm.snoozedUntil) ? '<span class="snooze-count">💤 Snooze</span>' : ''}
+        </div>
+        <div class="alarm-meta">${alarm.label} · ${alarm.sound}</div>
+        <div class="alarm-days">
+          ${DAYS.map(d => `<span class="day-badge ${alarm.days.includes(d)?'on':''}">${d}</span>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <label class="toggle">
+          <input type="checkbox" ${alarm.active?'checked':''} onchange="toggleAlarm(${alarm.id})">
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+        <button class="btn btn-danger btn-sm" onclick="deleteAlarm(${alarm.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+  
+  document.getElementById('activeCount').textContent = alarms.filter(a => a.active).length;
+}
+
+function updateNextAlarm() {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const dayIdx = (now.getDay() + 6) % 7;
+  
+  let closest = null, closestMins = Infinity;
+  
+  for (const alarm of alarms) {
+    if (!alarm.active) continue;
+    const [ah, am] = alarm.time.split(':').map(Number);
+    
+    // Check all days
+    for (let d = 0; d < 7; d++) {
+      const checkDay = DAYS[(dayIdx + d) % 7];
+      if (alarm.days.length > 0 && !alarm.days.includes(checkDay)) continue;
+      
+      let minsUntil = (ah * 60 + am) - (h * 60 + m) + d * 1440;
+      if (minsUntil <= 0) continue;
+      
+      if (minsUntil < closestMins) { closestMins = minsUntil; closest = alarm; }
+      break;
+    }
+  }
+  
+  if (closest && closestMins < Infinity) {
+    document.getElementById('nextAlarm').textContent = closest.time;
+    const hh = Math.floor(closestMins / 60), mm = closestMins % 60;
+    document.getElementById('nextAlarmIn').textContent = 
+      hh > 0 ? `Dans ${hh}h${mm > 0 ? mm + 'min' : ''}` : `Dans ${mm} min`;
+  } else {
+    document.getElementById('nextAlarm').textContent = '--:--';
+    document.getElementById('nextAlarmIn').textContent = 'Aucune alarme active';
+  }
+}
+
+function saveAlarms() {
+  localStorage.setItem('smartAlarms', JSON.stringify(alarms));
+}
+
+// ======= UI HELPERS =======
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name)?.classList.add('active');
+  const tabs = ['alarms','add','sound','settings'];
+  const idx = tabs.indexOf(name);
+  document.querySelectorAll('.tab')[idx]?.classList.add('active');
+}
+
+function toggleDay(btn) {
+  btn.classList.toggle('selected');
+}
+
+function selectDays(days) {
+  document.querySelectorAll('.day-btn').forEach(b => {
+    b.classList.toggle('selected', days.includes(b.dataset.d));
+  });
+}
+
+function selectMusic(el) {
+  document.querySelectorAll('.music-option').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  playAlarmSound(el.dataset.s);
+}
+
+function handleMusicUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  uploadedFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    getAudioCtx().decodeAudioData(e.target.result.slice(0), buf => {
+      uploadedAudioBuffer = buf;
+      document.getElementById('uploadedMusicName').textContent = file.name;
+      document.getElementById('uploadedMusic').style.display = 'flex';
+      showToast('🎵 Musique importée : ' + file.name);
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function testUploadedMusic() {
+  if (uploadedAudioBuffer) playAlarmSound('music');
+  else showToast('⚠ Aucune musique importée');
+}
+
+function removeMusic() {
+  uploadedAudioBuffer = null;
+  uploadedFileName = '';
+  document.getElementById('uploadedMusic').style.display = 'none';
+  document.getElementById('musicFile').value = '';
+}
+
+function setTheme(el, c1, c2, c3) {
+  document.documentElement.style.setProperty('--accent', c1);
+  document.documentElement.style.setProperty('--accent2', c2);
+  document.documentElement.style.setProperty('--accent3', c3);
+  document.querySelectorAll('.day-selector .day-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function toggleRings(on) {
+  ringsEnabled = on;
+  if (!on) {
+    ['ringS','ringM','ringH'].forEach(id => {
+      document.getElementById(id).style.strokeDashoffset = 999;
+    });
+  }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+function exportAlarms() {
+  const data = JSON.stringify(alarms, null, 2);
+  const a = document.createElement('a');
+  a.href = 'data:application/json,' + encodeURIComponent(data);
+  a.download = 'alarmes.json';
+  a.click();
+  showToast('📤 Alarmes exportées');
+}
+
+function importAlarms() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        alarms = imported;
+        saveAlarms(); renderAlarms();
+        showToast('📥 ' + imported.length + ' alarmes importées');
+      } catch { showToast('⚠ Fichier invalide'); }
+    };
+    reader.readAsText(e.target.files[0]);
+  };
+  input.click();
+}
+
+function clearAll() {
+  if (confirm('Effacer toutes les alarmes ?')) {
+    alarms = []; saveAlarms(); renderAlarms();
+    showToast('🗑 Toutes les alarmes effacées');
+  }
+}
+
+// ======= EQ BARS =======
+function setupEQ() {
+  const eq = document.getElementById('eqBars');
+  if (!eq) return;
+  for (let i = 0; i < 20; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'eq-bar';
+    bar.style.height = '4px';
+    eq.appendChild(bar);
+  }
+  setInterval(() => {
+    document.querySelectorAll('.eq-bar').forEach(b => {
+      const h = Math.random() * 36 + 4;
+      b.style.height = h + 'px';
+    });
+  }, 150);
+}
+
+// ======= VOICES =======
+function loadVoices() {
+  const sel = document.getElementById('voiceSelect');
+  if (!sel) return;
+  const voices = window.speechSynthesis?.getVoices() || [];
+  sel.innerHTML = '<option value="">Par défaut (fr)</option>';
+  voices.forEach((v, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = v.name + ' (' + v.lang + ')';
+    if (v.lang.startsWith('fr')) opt.style.color = '#00d4ff';
+    sel.appendChild(opt);
+  });
+}
+
+// ======= INIT =======
+window.addEventListener('load', () => {
+  updateClock();
+  setInterval(updateClock, 1000);
+  renderAlarms();
+  setupEQ();
+  loadVoices();
+  if (window.speechSynthesis) {
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    setTimeout(loadVoices, 500);
+  }
+  
+  // Welcome banner
+  const msg = document.getElementById('welcomeMsg');
+  const banner = document.getElementById('speechBanner');
+  if (msg && banner) {
+    msg.addEventListener('input', () => { if(!banner.classList.contains('speaking')) banner.textContent = '🤖 ' + msg.value; });
+  }
+  
+  // Init banner
+  setTimeout(() => {
+    speakTime(true);
+  }, 1200);
+});
+</script>
+</body>
+</html>
